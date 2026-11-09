@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "720531799326",
+    "project_id": "codenect-aceb6",
+    "storage_bucket": "codenect-aceb6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:720531799326:android:eb2968bb49d8c5feebdd0f",
+        "android_client_info": {
+          "package_name": "com.example.codenect_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6Cq8RvrnnVNJ79pIEJm1N63z7NT4sUBM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
