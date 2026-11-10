@@ -99,6 +99,17 @@ void main() {
 
     expect(find.text('PLAYER LOGIN'), findsNWidgets(2));
     expect(find.byKey(const ValueKey('login-email')), findsOneWidget);
+    expect(find.byKey(const ValueKey('left-panel-artwork')), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage).assetName ==
+                'assets/images/left-panel_loginpart.png',
+      ),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -121,6 +132,49 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('PLAYER LOGIN'), findsNWidgets(2));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('phone landscape uses a compact side-by-side login layout', (
+    tester,
+  ) async {
+    setViewport(tester, const Size(844, 390));
+    await tester.pumpWidget(const MaterialApp(home: LoginPage()));
+
+    expect(
+      find.byKey(const ValueKey('mobile-landscape-brand')),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage).assetName ==
+                'assets/images/left-panel_loginpart.png',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('landscape-form-scroll')), findsOneWidget);
+    expect(find.byKey(const ValueKey('login-email')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('phone landscape registration form stays scrollable', (
+    tester,
+  ) async {
+    setViewport(tester, const Size(844, 390));
+    await tester.pumpWidget(const MaterialApp(home: LoginPage()));
+
+    await tester.ensureVisible(find.text('New player? Create account'));
+    await tester.tap(find.text('New player? Create account'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('create-email')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('create-confirm-password')),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 }

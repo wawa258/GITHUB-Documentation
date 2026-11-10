@@ -176,7 +176,10 @@ class _LoginScreenState extends State<LoginScreen> {
           SafeArea(
             child: LayoutBuilder(
               builder: (context, c) {
-                final wide = c.maxWidth >= 960 && c.maxHeight >= 640;
+                final desktopWide = c.maxWidth >= 960 && c.maxHeight >= 640;
+                final landscape = c.maxWidth >= 600 && c.maxWidth > c.maxHeight;
+                final horizontalLayout = desktopWide || landscape;
+                final compactLandscape = landscape && !desktopWide;
                 final card = _LoginCard(
                   formKey: _formKey,
                   playerName: _playerName,
@@ -185,6 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   confirmPassword: _confirmPassword,
                   creatingAccount: _creatingAccount,
                   busy: _busy,
+                  compact: compactLandscape,
                   onSubmit: _submit,
                   onGoogle: () => _signInWithProvider(GoogleAuthProvider()),
                   onFacebook: () => _signInWithProvider(FacebookAuthProvider()),
@@ -196,28 +200,37 @@ class _LoginScreenState extends State<LoginScreen> {
                     });
                   },
                 );
-                if (wide) {
+                if (horizontalLayout) {
                   return SingleChildScrollView(
                     child: SizedBox(
                       height: c.maxHeight,
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Expanded(
-                            flex: 5,
+                          Expanded(
+                            flex: compactLandscape ? 3 : 5,
                             child: Padding(
-                              padding: EdgeInsets.fromLTRB(72, 56, 24, 40),
-                              child: _BrandPanel(),
+                              padding: compactLandscape
+                                  ? const EdgeInsets.all(8)
+                                  : const EdgeInsets.fromLTRB(72, 56, 24, 40),
+                              child: compactLandscape
+                                  ? const _LandscapeBrandPanel()
+                                  : const _BrandPanel(),
                             ),
                           ),
                           Expanded(
-                            flex: 6,
+                            flex: compactLandscape ? 7 : 6,
                             child: SingleChildScrollView(
-                              padding: const EdgeInsets.all(32),
+                              key: compactLandscape
+                                  ? const ValueKey('landscape-form-scroll')
+                                  : null,
+                              padding: EdgeInsets.all(
+                                compactLandscape ? 10 : 32,
+                              ),
                               child: Center(
                                 child: ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    maxWidth: 556,
+                                  constraints: BoxConstraints(
+                                    maxWidth: compactLandscape ? 620 : 556,
                                   ),
                                   child: card,
                                 ),
@@ -320,35 +333,35 @@ class _BrandPanel extends StatelessWidget {
   final bool compact;
 
   @override
+  Widget build(BuildContext context) => _LeftPanelArtwork(
+    compact: compact,
+    key: const ValueKey('left-panel-artwork'),
+  );
+}
+
+class _LandscapeBrandPanel extends StatelessWidget {
+  const _LandscapeBrandPanel();
+
+  @override
+  Widget build(BuildContext context) =>
+      _LeftPanelArtwork(key: const ValueKey('mobile-landscape-brand'));
+}
+
+class _LeftPanelArtwork extends StatelessWidget {
+  const _LeftPanelArtwork({super.key, this.compact = false});
+  final bool compact;
+
+  @override
   Widget build(BuildContext context) {
-    final top = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const PixelWordmark(size: 40),
-        SizedBox(height: compact ? 28 : 60),
-        const PixelGamepad(),
-        SizedBox(height: compact ? 28 : 40),
-        const _Tagline(),
-        SizedBox(height: compact ? 24 : 36),
-        const XpBar(filled: 3, total: 12),
-      ],
-    );
-    final footer = Text(
-      '© Codenect',
-      style: inter(13, const Color(0xFFB6A3F0)),
+    final artwork = Image.asset(
+      'assets/images/left-panel_loginpart.png',
+      fit: BoxFit.contain,
+      semanticLabel: 'Codenect logo, gamepad, tagline, and XP bar',
     );
     if (compact) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [top],
-      );
+      return SizedBox(height: 220, child: Center(child: artwork));
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [top, const SizedBox(height: 32), footer],
-    );
+    return Center(child: artwork);
   }
 }
 
@@ -467,33 +480,6 @@ class _GamepadPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter old) => false;
 }
 
-class _Tagline extends StatelessWidget {
-  const _Tagline();
-
-  Widget _line(String t, Color c) => Padding(
-    padding: const EdgeInsets.only(bottom: 14),
-    child: Stack(
-      children: [
-        Transform.translate(
-          offset: const Offset(4, 4),
-          child: Text(t, style: pixel(28, C.ink)),
-        ),
-        Text(t, style: pixel(28, c)),
-      ],
-    ),
-  );
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _line('CONNECT.', Colors.white),
-      _line('CODE.', Colors.white),
-      _line('LEVEL UP.', C.gold),
-    ],
-  );
-}
-
 class XpBar extends StatelessWidget {
   const XpBar({super.key, required this.filled, required this.total});
   final int filled;
@@ -555,6 +541,7 @@ class _LoginCard extends StatelessWidget {
     required this.confirmPassword,
     required this.creatingAccount,
     required this.busy,
+    required this.compact,
     required this.onSubmit,
     required this.onGoogle,
     required this.onFacebook,
@@ -569,6 +556,7 @@ class _LoginCard extends StatelessWidget {
   final TextEditingController confirmPassword;
   final bool creatingAccount;
   final bool busy;
+  final bool compact;
   final VoidCallback onSubmit;
   final VoidCallback onGoogle;
   final VoidCallback onFacebook;
@@ -595,7 +583,7 @@ class _LoginCard extends StatelessWidget {
           ),
         ),
         Container(
-          padding: const EdgeInsets.fromLTRB(44, 40, 44, 40),
+          padding: EdgeInsets.all(compact ? 14 : 40),
           decoration: BoxDecoration(
             color: C.panel.withValues(alpha: 0.94),
             border: Border.all(color: C.violet, width: 4),
@@ -607,7 +595,7 @@ class _LoginCard extends StatelessWidget {
             key: formKey,
             child: LayoutBuilder(
               builder: (context, c) {
-                final twoCols = c.maxWidth >= 440;
+                final twoCols = c.maxWidth >= (compact ? 400 : 440);
                 final title = creatingAccount ? 'NEW PLAYER' : 'PLAYER LOGIN';
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -620,38 +608,43 @@ class _LoginCard extends StatelessWidget {
                           offset: const Offset(3, 3),
                           child: Text(
                             title,
-                            style: pixel(24, C.ink, spacing: 1),
+                            style: pixel(compact ? 16 : 24, C.ink, spacing: 1),
                           ),
                         ),
-                        Text(title, style: pixel(24, C.gold, spacing: 1)),
+                        Text(
+                          title,
+                          style: pixel(compact ? 16 : 24, C.gold, spacing: 1),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 18),
+                    SizedBox(height: compact ? 6 : 18),
                     Text(
                       creatingAccount
                           ? 'Create your player account to join the team.'
                           : 'Welcome back. Your team is waiting.',
-                      style: inter(15, C.text),
+                      style: inter(compact ? 12 : 15, C.text),
                     ),
-                    const SizedBox(height: 26),
+                    SizedBox(height: compact ? 10 : 26),
 
                     // Social buttons
                     _responsiveRow(
                       twoCols,
                       SocialButton(
                         label: 'Google',
-                        icon: const _GoogleG(size: 22),
+                        icon: _GoogleG(size: compact ? 18 : 22),
                         onPressed: onGoogle,
                         enabled: !busy,
+                        height: compact ? 40 : 52,
                       ),
                       SocialButton(
                         label: 'Facebook',
-                        icon: const _FacebookF(size: 22),
+                        icon: _FacebookF(size: compact ? 18 : 22),
                         onPressed: onFacebook,
                         enabled: !busy,
+                        height: compact ? 40 : 52,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: compact ? 10 : 24),
 
                     // Divider
                     Row(
@@ -660,10 +653,12 @@ class _LoginCard extends StatelessWidget {
                           child: Container(height: 3, color: C.violetDark),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: compact ? 8 : 14,
+                          ),
                           child: Text(
                             'or use player ID',
-                            style: inter(13, C.muted),
+                            style: inter(compact ? 10 : 13, C.muted),
                           ),
                         ),
                         Expanded(
@@ -671,7 +666,7 @@ class _LoginCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: compact ? 10 : 24),
 
                     if (creatingAccount) ...[
                       _responsiveRow(
@@ -680,6 +675,7 @@ class _LoginCard extends StatelessWidget {
                           label: 'PLAYER NAME',
                           hint: 'Your player name',
                           controller: playerName,
+                          compact: compact,
                           validator: (value) => (value?.trim().isEmpty ?? true)
                               ? 'Enter a player name.'
                               : null,
@@ -691,9 +687,10 @@ class _LoginCard extends StatelessWidget {
                           controller: email,
                           keyboardType: TextInputType.emailAddress,
                           validator: _validateEmail,
+                          compact: compact,
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      SizedBox(height: compact ? 8 : 14),
                       _responsiveRow(
                         twoCols,
                         PixelField(
@@ -703,6 +700,7 @@ class _LoginCard extends StatelessWidget {
                           controller: password,
                           obscure: true,
                           validator: _validatePassword,
+                          compact: compact,
                         ),
                         PixelField(
                           key: const ValueKey('create-confirm-password'),
@@ -710,6 +708,7 @@ class _LoginCard extends StatelessWidget {
                           hint: 'Enter password again',
                           controller: confirmPassword,
                           obscure: true,
+                          compact: compact,
                           validator: (value) {
                             if (value?.isEmpty ?? true) {
                               return 'Confirm your password.';
@@ -730,6 +729,7 @@ class _LoginCard extends StatelessWidget {
                           controller: email,
                           keyboardType: TextInputType.emailAddress,
                           validator: _validateEmail,
+                          compact: compact,
                         ),
                         PixelField(
                           key: const ValueKey('login-password'),
@@ -738,9 +738,10 @@ class _LoginCard extends StatelessWidget {
                           controller: password,
                           obscure: true,
                           validator: _validatePassword,
+                          compact: compact,
                         ),
                       ),
-                    const SizedBox(height: 30),
+                    SizedBox(height: compact ? 8 : 30),
 
                     PressStartButton(
                       onPressed: onSubmit,
@@ -749,13 +750,14 @@ class _LoginCard extends StatelessWidget {
                           ? 'Create account'
                           : 'Press start to sign in',
                       busy: busy,
+                      compact: compact,
                     ),
-                    const SizedBox(height: 26),
+                    SizedBox(height: compact ? 8 : 26),
 
                     Wrap(
                       alignment: WrapAlignment.spaceBetween,
-                      runSpacing: 10,
-                      spacing: 16,
+                      runSpacing: compact ? 6 : 10,
+                      spacing: compact ? 8 : 16,
                       children: [
                         if (!creatingAccount)
                           InkWell(
@@ -763,7 +765,7 @@ class _LoginCard extends StatelessWidget {
                             child: Text(
                               'Forgot password?',
                               style: inter(
-                                14,
+                                compact ? 11 : 14,
                                 C.muted,
                                 weight: FontWeight.w600,
                               ),
@@ -775,7 +777,11 @@ class _LoginCard extends StatelessWidget {
                             creatingAccount
                                 ? 'Already a player? Sign in'
                                 : 'New player? Create account',
-                            style: inter(14, C.gold, weight: FontWeight.w600),
+                            style: inter(
+                              compact ? 11 : 14,
+                              C.gold,
+                              weight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
@@ -815,12 +821,18 @@ class _LoginCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(child: a),
-          const SizedBox(width: 16),
+          SizedBox(width: compact ? 8 : 16),
           Expanded(child: b),
         ],
       );
     }
-    return Column(children: [a, const SizedBox(height: 14), b]);
+    return Column(
+      children: [
+        a,
+        SizedBox(height: compact ? 8 : 14),
+        b,
+      ],
+    );
   }
 }
 
@@ -845,18 +857,20 @@ class SocialButton extends StatelessWidget {
     required this.icon,
     required this.onPressed,
     this.enabled = true,
+    this.height = 52,
   });
   final String label;
   final Widget icon;
   final VoidCallback onPressed;
   final bool enabled;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: enabled ? onPressed : null,
       child: Container(
-        height: 52,
+        height: height,
         width: double.infinity,
         decoration: BoxDecoration(
           color: C.btnBg,
@@ -890,6 +904,7 @@ class PixelField extends StatefulWidget {
     this.obscure = false,
     this.keyboardType,
     this.validator,
+    this.compact = false,
   });
 
   final String label;
@@ -898,6 +913,7 @@ class PixelField extends StatefulWidget {
   final bool obscure;
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
+  final bool compact;
 
   @override
   State<PixelField> createState() => _PixelFieldState();
@@ -926,12 +942,17 @@ class _PixelFieldState extends State<PixelField> {
       children: [
         Text(
           widget.label,
-          style: inter(12, C.gold, weight: FontWeight.w700, spacing: 1.5),
+          style: inter(
+            widget.compact ? 10 : 12,
+            C.gold,
+            weight: FontWeight.w700,
+            spacing: widget.compact ? 1 : 1.5,
+          ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: widget.compact ? 4 : 10),
         Container(
-          constraints: const BoxConstraints(minHeight: 52),
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          constraints: BoxConstraints(minHeight: widget.compact ? 42 : 52),
+          padding: EdgeInsets.symmetric(horizontal: widget.compact ? 8 : 14),
           decoration: BoxDecoration(
             color: C.ink,
             border: Border.all(
@@ -947,12 +968,12 @@ class _PixelFieldState extends State<PixelField> {
             keyboardType: widget.keyboardType,
             validator: widget.validator,
             cursorColor: C.gold,
-            style: inter(15, Colors.white),
+            style: inter(widget.compact ? 12 : 15, Colors.white),
             decoration: InputDecoration(
               isDense: true,
               border: InputBorder.none,
               hintText: widget.hint,
-              hintStyle: inter(15, C.hint),
+              hintStyle: inter(widget.compact ? 12 : 15, C.hint),
               suffixIcon: widget.obscure
                   ? GestureDetector(
                       behavior: HitTestBehavior.opaque,
@@ -986,11 +1007,13 @@ class PressStartButton extends StatefulWidget {
     this.label = 'PRESS START',
     this.semanticLabel = 'Press start to sign in',
     this.busy = false,
+    this.compact = false,
   });
   final VoidCallback onPressed;
   final String label;
   final String semanticLabel;
   final bool busy;
+  final bool compact;
 
   @override
   State<PressStartButton> createState() => _PressStartButtonState();
@@ -1002,6 +1025,8 @@ class _PressStartButtonState extends State<PressStartButton> {
   @override
   Widget build(BuildContext context) {
     const depth = 8.0;
+    final height = widget.compact ? 54.0 : 72.0;
+    final fontSize = widget.compact ? 13.0 : 18.0;
     return Semantics(
       button: true,
       enabled: !widget.busy,
@@ -1018,7 +1043,7 @@ class _PressStartButtonState extends State<PressStartButton> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 60),
           width: double.infinity,
-          height: 72,
+          height: height,
           margin: EdgeInsets.only(
             top: _down ? depth : 0,
             bottom: _down ? 0 : depth,
@@ -1068,7 +1093,11 @@ class _PressStartButtonState extends State<PressStartButton> {
                         )
                       : Text(
                           widget.label,
-                          style: pixel(18, const Color(0xFF2A1608), spacing: 2),
+                          style: pixel(
+                            fontSize,
+                            const Color(0xFF2A1608),
+                            spacing: widget.compact ? 1 : 2,
+                          ),
                         ),
                 ),
               ),
