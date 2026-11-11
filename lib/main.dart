@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'firebase_options.dart';
+import 'create_player_screen.dart';
 import 'login_page.dart';
 
 Future<void> main() async {
@@ -32,6 +33,12 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
+      routes: {
+        '/create-player': (context) => CreatePlayerScreen(
+          onBack: () => Navigator.of(context).pop(),
+          onStart: (player) => Navigator.of(context).pop(player),
+        ),
+      },
       home: const AuthGate(),
     );
   }

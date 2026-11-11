@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'auth_database.dart';
+import 'create_player_screen.dart';
 
 // ----------------------------- Palette -------------------------------------
 class C {
@@ -1238,8 +1239,41 @@ class AuthGate extends StatelessWidget {
           }
           return const LoginPage();
         }
-        return _SignedInPage(user: snapshot.data!);
+        return _PlayerSetupGate(user: snapshot.data!);
       },
+    );
+  }
+}
+
+class _PlayerSetupGate extends StatefulWidget {
+  const _PlayerSetupGate({required this.user});
+  final User user;
+
+  @override
+  State<_PlayerSetupGate> createState() => _PlayerSetupGateState();
+}
+
+class _PlayerSetupGateState extends State<_PlayerSetupGate> {
+  bool _adventureStarted = false;
+
+  Future<void> _signOut() async {
+    try {
+      await AuthDatabase.instance.signOut();
+    } on FirebaseAuthException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.message ?? 'Unable to sign out.')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_adventureStarted) return _SignedInPage(user: widget.user);
+    return CreatePlayerScreen(
+      onBack: _signOut,
+      onStart: (_) => setState(() => _adventureStarted = true),
     );
   }
 }
