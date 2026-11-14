@@ -13,6 +13,7 @@ const int kFrame = 32; // px per frame
 const int kIdleCol = 1; // middle column = standing
 const List<int> kWalkCols = [1, 0, 1, 2];
 const bool kWalkPreview = false; // true = preview walks in place
+const double kUpHairDrop = 6; // px to lower hair in the 'up' view
 const int kBodyVariant = 0; // each outfit has 2 body blocks: 0 or 1
 // Draw order, bottom -> top. Move "back" if it looks wrong.
 const List<String> kLayerOrder = ['back', 'body', 'hair'];
@@ -156,7 +157,8 @@ class SpritePainter extends CustomPainter {
         kFrame.toDouble(),
         kFrame.toDouble(),
       );
-      canvas.drawImageRect(sheets.of(layer), src, dst, paint);
+      final nudge = (dir == 3 && layer == 'hair') ? kUpHairDrop * size.height / kFrame : 0.0;
+      canvas.drawImageRect(sheets.of(layer), src, dst.shift(Offset(0, nudge)), paint);
     }
   }
 
@@ -338,17 +340,6 @@ class _CreatePlayerScreenState extends State<CreatePlayerScreen> {
   Widget _content() {
     return Stack(
       children: [
-        Positioned(
-          left: 584,
-          top: 104,
-          width: 636,
-          height: 526,
-          child: Image.asset(
-            'assets/images/create-form for chreate player character.png',
-            fit: BoxFit.fill,
-            filterQuality: FilterQuality.none,
-          ),
-        ),
         // ---------- left: preview panel ----------
         Positioned(
           left: 60,
@@ -359,6 +350,11 @@ class _CreatePlayerScreenState extends State<CreatePlayerScreen> {
         ),
 
         // ---------- right: form ----------
+        Positioned(
+          left: 590,
+          top: 100,
+          child: Text('CREATE YOUR PLAYER', style: px(24, cGold)),
+        ),
         Positioned(
           right: 64,
           top: 112,
@@ -448,7 +444,6 @@ class _CreatePlayerScreenState extends State<CreatePlayerScreen> {
           width: 97,
           height: 18,
           child: Container(
-            color: Colors.black,
             alignment: Alignment.centerRight,
             child: Text(skins[skin].$1, style: inter(12, cLav)),
           ),
@@ -476,7 +471,6 @@ class _CreatePlayerScreenState extends State<CreatePlayerScreen> {
           width: 100,
           height: 18,
           child: Container(
-            color: Colors.black,
             alignment: Alignment.centerRight,
             child: Text(lengths[len], style: inter(12, cLav)),
           ),
@@ -501,7 +495,6 @@ class _CreatePlayerScreenState extends State<CreatePlayerScreen> {
           width: 97,
           height: 18,
           child: Container(
-            color: Colors.black,
             alignment: Alignment.centerRight,
             child: Text(hairs[hair].$1, style: inter(12, cLav)),
           ),
@@ -529,7 +522,6 @@ class _CreatePlayerScreenState extends State<CreatePlayerScreen> {
           width: 100,
           height: 18,
           child: Container(
-            color: Colors.black,
             alignment: Alignment.centerRight,
             child: Text(outfits[outfit].$1, style: inter(12, cLav)),
           ),
@@ -712,6 +704,7 @@ class _CreatePlayerScreenState extends State<CreatePlayerScreen> {
     int selected,
     ValueChanged<int> onPick,
   ) => Row(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       for (int i = 0; i < colors.length; i++) ...[
         if (i > 0) const SizedBox(width: 12),
