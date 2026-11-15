@@ -13,7 +13,7 @@ const int kFrame = 32; // px per frame
 const int kIdleCol = 1; // middle column = standing
 const List<int> kWalkCols = [1, 0, 1, 2];
 const bool kWalkPreview = false; // true = preview walks in place
-const double kUpHairDrop = 6; // px to lower hair in the 'up' view
+const List<double> kUpHairDrop = [0, 0, 0]; // px to lower hair in the 'up' view
 const int kBodyVariant = 0; // each outfit has 2 body blocks: 0 or 1
 // Draw order, bottom -> top. Move "back" if it looks wrong.
 const List<String> kLayerOrder = ['back', 'body', 'hair'];
@@ -150,6 +150,7 @@ class SpritePainter extends CustomPainter {
     final paint = Paint()..filterQuality = FilterQuality.none; // crisp pixels
     final dst = Offset.zero & size;
     for (final layer in kLayerOrder) {
+      if (layer == 'back' && len != 2) continue;
       final row = _row(layer) + dir;
       final src = Rect.fromLTWH(
         (col * kFrame).toDouble(),
@@ -157,7 +158,7 @@ class SpritePainter extends CustomPainter {
         kFrame.toDouble(),
         kFrame.toDouble(),
       );
-      final nudge = (dir == 3 && layer == 'hair') ? kUpHairDrop * size.height / kFrame : 0.0;
+      final nudge = (dir == 3 && layer == 'hair') ? kUpHairDrop[len] * size.height / kFrame : 0.0;
       canvas.drawImageRect(sheets.of(layer), src, dst.shift(Offset(0, nudge)), paint);
     }
   }
@@ -637,7 +638,7 @@ class _CreatePlayerScreenState extends State<CreatePlayerScreen> {
                       child: ColoredBox(color: cGold),
                     ),
                   ),
-                  Center(child: _sprite(10, dir, col)),
+                  Center(child: _sprite(9, dir, col)),
                 ],
               ),
             ),
