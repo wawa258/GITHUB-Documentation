@@ -36,9 +36,11 @@ dependencies:
   cupertino_icons: ^1.0.8
   firebase_core: ^5.1.0
   cloud_firestore: ^7.1.0
-  flutter_svg: ^2.3.2
+  flutter_svg: ^2.4.0
   firebase_auth: ^7.0.1
   google_fonts: ^9.0.0
+  flame: ^2.0.0-dev.1
+  flame_tiled: ^4.0.0-dev.1
 
 dev_dependencies:
   flutter_test:
@@ -61,6 +63,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/maps/
     - assets/sprites/
 
   # The following line ensures that the Material Icons font is

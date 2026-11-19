@@ -1,4 +1,6 @@
+import 'package:codenect_project/create_player_screen.dart';
 import 'package:codenect_project/login_page.dart';
+import 'package:codenect_project/screens/lobby_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -175,6 +177,25 @@ void main() {
       find.byKey(const ValueKey('create-confirm-password')),
       findsOneWidget,
     );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('start adventure opens the room map', (tester) async {
+    setViewport(tester, const Size(1280, 720));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LobbyScreen(
+          player: const PlayerConfig('Test Player', 0, 0, 1, 1, 1),
+          onSignOut: () {},
+        ),
+      ),
+    );
+
+    await tester.tap(find.bySemanticsLabel('Start adventure'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('PHASE 1 - START OF ADVENTURE'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

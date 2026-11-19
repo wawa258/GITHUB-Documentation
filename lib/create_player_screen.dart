@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /* ======================================================================
-   CONFIG – match these to your sprite sheets
+   CONFIG â€“ match these to your sprite sheets
    ====================================================================== */
 const String kSpritePath = 'assets/sprites/';
 const int kFrame = 32; // px per frame
@@ -575,7 +575,7 @@ class _CreatePlayerScreenState extends State<CreatePlayerScreen> {
       children: [
         Positioned.fill(
           child: Image.asset(
-            'assets/images/preview-panel for create player character.png',
+            'assets/images/preview-panel.png',
             fit: BoxFit.fill,
             filterQuality: FilterQuality.none,
           ),

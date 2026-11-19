@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'auth_database.dart';
 import 'create_player_screen.dart';
+import 'screens/lobby_screen.dart';
 
 // ----------------------------- Palette -------------------------------------
 class C {
@@ -1239,91 +1241,124 @@ class AuthGate extends StatelessWidget {
           }
           return const LoginPage();
         }
-        return _PlayerSetupGate(user: snapshot.data!);
+        return _PlayerGate(key: ValueKey(snapshot.data!.uid), user: snapshot.data!);
       },
     );
   }
 }
 
-class _PlayerSetupGate extends StatefulWidget {
-  const _PlayerSetupGate({required this.user});
+/// Decides what a signed-in user sees:
+///  - no saved character  -> CreatePlayerScreen, then the lobby
+///  - saved character     -> lobby directly
+class _PlayerGate extends StatefulWidget {
+  const _PlayerGate({super.key, required this.user});
   final User user;
 
   @override
-  State<_PlayerSetupGate> createState() => _PlayerSetupGateState();
+  State<_PlayerGate> createState() => _PlayerGateState();
 }
 
-class _PlayerSetupGateState extends State<_PlayerSetupGate> {
-  bool _adventureStarted = false;
+class _PlayerGateState extends State<_PlayerGate> {
+  late Future<PlayerConfig?> _load = _loadPlayer();
+  PlayerConfig? _justCreated;
+
+  DocumentReference<Map<String, dynamic>> get _doc => FirebaseFirestore.instance
+      .collection('users')
+      .doc(widget.user.uid);
+
+  Future<PlayerConfig?> _loadPlayer() async {
+    final snap = await _doc.get();
+    final p = snap.data()?['player'];
+    if (p is! Map) return null;
+    int n(String k) => (p[k] as num?)?.toInt() ?? 0;
+    final name = (p['name'] as String?) ?? '';
+    if (name.isEmpty) return null;
+    return PlayerConfig(
+      name,
+      n('gender'),
+      n('skin'),
+      n('hairLength'),
+      n('hairColor'),
+      n('outfit'),
+    );
+  }
+
+  Future<void> _savePlayer(PlayerConfig player) async {
+    try {
+      await _doc.set({
+        'player': player.toJson(),
+      }, SetOptions(merge: true));
+      if (!mounted) return;
+      setState(() => _justCreated = player);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to save your character: $error')),
+      );
+    }
+  }
 
   Future<void> _signOut() async {
     try {
       await AuthDatabase.instance.signOut();
     } on FirebaseAuthException catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message ?? 'Unable to sign out.')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message ?? 'Unable to sign out.')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_adventureStarted) return _SignedInPage(user: widget.user);
-    return CreatePlayerScreen(
-      onBack: _signOut,
-      onStart: (_) => setState(() => _adventureStarted = true),
-    );
-  }
-}
-
-class _SignedInPage extends StatelessWidget {
-  const _SignedInPage({required this.user});
-  final User user;
-
-  @override
-  Widget build(BuildContext context) {
-    final name = user.displayName;
-    return Scaffold(
-      backgroundColor: C.ink,
-      appBar: AppBar(title: const Text('Codenect'), backgroundColor: C.deep),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const PixelWordmark(size: 32),
-              const SizedBox(height: 24),
-              Text(
-                name == null || name.isEmpty
-                    ? 'Signed in as ${user.email ?? 'player'}'
-                    : 'Welcome, $name!',
-                style: inter(16, Colors.white),
-                textAlign: TextAlign.center,
+    final created = _justCreated;
+    if (created != null) {
+      return LobbyScreen(player: created, onSignOut: _signOut);
+    }
+    return FutureBuilder<PlayerConfig?>(
+      future: _load,
+      builder: (context, snap) {
+        if (snap.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            backgroundColor: C.ink,
+            body: Center(child: CircularProgressIndicator(color: C.gold)),
+          );
+        }
+        if (snap.hasError) {
+          return Scaffold(
+            backgroundColor: C.ink,
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Unable to load your player: ${snap.error}',
+                      style: inter(14, Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: () => setState(() => _load = _loadPlayer()),
+                      child: const Text('Try again'),
+                    ),
+                    TextButton(
+                      onPressed: _signOut,
+                      child: const Text('Sign out'),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () async {
-                  try {
-                    await AuthDatabase.instance.signOut();
-                  } on FirebaseAuthException catch (error) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(error.message ?? 'Unable to sign out.'),
-                        ),
-                      );
-                    }
-                  }
-                },
-                child: const Text('Sign out'),
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
+          );
+        }
+        final saved = snap.data;
+        if (saved != null) {
+          return LobbyScreen(player: saved, onSignOut: _signOut);
+        }
+        return CreatePlayerScreen(onBack: _signOut, onStart: _savePlayer);
+      },
     );
   }
 }

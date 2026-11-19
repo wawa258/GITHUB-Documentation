@@ -9,6 +9,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.79"
+  archive:
+    dependency: transitive
+    description:
+      name: archive
+      sha256: "2fda90592c0afd219c5e285618a98da835cd10df38372666093d25dfe457a2d0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.7.1"
   args:
     dependency: transitive
     description:
@@ -177,6 +185,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.0"
+  flame:
+    dependency: "direct main"
+    description:
+      name: flame
+      sha256: "56f16a56ce921ed80b363e3a1861f6cce43d015fa8958fc8066b1187b1ef571e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0-dev.1"
+  flame_tiled:
+    dependency: "direct main"
+    description:
+      name: flame_tiled
+      sha256: "2bd9c09d529ef7191a0994d7f8d5f735c4e2264fcd52c0d7949a3a10a106d101"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.0-dev.1"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -199,10 +223,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_svg
-      sha256: "100c19dcc4ff60083e95a44a6f44f3a1bb887d353c5d86f6a9b688aa3cb46236"
+      sha256: "455a22036f8d1b7c74f53283c8644d6af2f6f7c9ec72c7b06a2ff70fb3954a54"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.2"
+    version: "2.4.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -453,6 +477,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
+  posix:
+    dependency: transitive
+    description:
+      name: posix
+      sha256: "613646d076944f3acc125830af935b48d4b8a57a388691547bbfd25b434f4d63"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.5.4"
   pub_semver:
     dependency: transitive
     description:
@@ -522,6 +554,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.12"
+  tiled:
+    dependency: transitive
+    description:
+      name: tiled
+      sha256: c77d5784d4bdcda81b7d5a34ec8d3aadfba6cb88a7a8a4cf80929abc9620d5b5
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.12.0"
   typed_data:
     dependency: transitive
     description:

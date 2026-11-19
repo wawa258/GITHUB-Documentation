@@ -1,0 +1,496 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../create_player_screen.dart';
+import 'game_screen.dart';
+
+/// The lobby is designed on a 1280x720 stage (same as the SVG) and scaled to
+/// fit the window, so nothing is ever cropped. Invisible "hot spots" sit on top
+/// of the buttons that are drawn in the SVG.
+class LobbyScreen extends StatefulWidget {
+  const LobbyScreen({
+    super.key,
+    required this.player,
+    required this.onSignOut,
+  });
+
+  final PlayerConfig player;
+  final VoidCallback onSignOut;
+
+  @override
+  State<LobbyScreen> createState() => _LobbyScreenState();
+}
+
+class _LobbyScreenState extends State<LobbyScreen> {
+  SheetSet? _sheets;
+  final Set<int> _doneQuests = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSprite();
+  }
+
+  Future<void> _loadSprite() async {
+    try {
+      final sheets = await loadSheets(widget.player.male ? 'm' : 'f');
+      if (mounted) setState(() => _sheets = sheets);
+    } catch (error) {
+      debugPrint('Lobby sprite failed to load: $error');
+    }
+  }
+
+  void _openGame() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => GameScreen(player: widget.player)),
+    );
+  }
+
+  Future<void> _panel(String title, String message, {bool signOut = false}) {
+    return showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: .6),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 460),
+          child: SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: cPreviewPanel,
+                border: Border.all(color: cLineHi, width: 4),
+                boxShadow: const [
+                  BoxShadow(color: cInk, offset: Offset(8, 8)),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: px(14, cGold)),
+                  const SizedBox(height: 16),
+                  Text(
+                    message,
+                    style: inter(14, cLav, w: FontWeight.w500, ls: 0),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (signOut) ...[
+                        PixelButton(
+                          label: 'SIGN OUT',
+                          width: 170,
+                          height: 48,
+                          fontSize: 10,
+                          onPressed: () {
+                            Navigator.of(ctx).pop();
+                            widget.onSignOut();
+                          },
+                        ),
+                        const SizedBox(width: 16),
+                      ],
+                      PixelButton(
+                        label: 'CLOSE',
+                        width: 130,
+                        height: 48,
+                        fontSize: 10,
+                        onPressed: () => Navigator.of(ctx).pop(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _soon(String title, String blurb) =>
+      _panel(title, '$blurb\n\nComing soon.');
+
+  Widget _hot(
+    double x,
+    double y,
+    double w,
+    double h,
+    String label,
+    VoidCallback onTap,
+  ) => Positioned(
+    left: x,
+    top: y,
+    width: w,
+    height: h,
+    child: _Hot(label: label, onTap: onTap),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.player;
+    final name = p.name.toUpperCase();
+    final sheets = _sheets;
+
+    return Scaffold(
+      backgroundColor: cInk,
+      body: Center(
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: SizedBox(
+            width: 1280,
+            height: 720,
+            child: Stack(
+              children: [
+                SvgPicture.asset(
+                  'assets/images/codenect-main-lobby.svg',
+                  width: 1280,
+                  height: 720,
+                  fit: BoxFit.fill,
+                ),
+
+                // ---------- real player data drawn over the SVG ----------
+                if (sheets != null)
+                  Positioned(
+                    left: 27,
+                    top: 15,
+                    width: 50,
+                    height: 50,
+                    child: ClipRect(
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            left: -4 * 50 / 24,
+                            top: 0,
+                            width: 32 * 50 / 24,
+                            height: 32 * 50 / 24,
+                            child: CustomPaint(
+                              painter: SpritePainter(
+                                sheets,
+                                p.skin,
+                                p.hairLength,
+                                p.hairColor,
+                                p.outfit,
+                                0,
+                                kIdleCol,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                Positioned(
+                  left: 98,
+                  top: 22,
+                  width: 400,
+                  child: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: px(13, Colors.white).copyWith(height: 1),
+                  ),
+                ),
+                if (sheets != null)
+                  Positioned(
+                    left: 462,
+                    top: 268,
+                    width: 256,
+                    height: 256,
+                    child: _BobbingSprite(sheets: sheets, player: p),
+                  ),
+                Positioned(
+                  left: 430,
+                  top: 232,
+                  width: 320,
+                  height: 26,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minWidth: 140,
+                        maxWidth: 320,
+                      ),
+                      child: Container(
+                        height: 26,
+                        color: cInk.withValues(alpha: .85),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Center(
+                          widthFactor: 1,
+                          child: Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: px(10, Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ---------- completed daily-quest checkmarks ----------
+                for (final i in _doneQuests)
+                  Positioned(
+                    left: 977,
+                    top: 428.9 + 56.4 * i,
+                    width: 14,
+                    height: 17.2,
+                    child: const ColoredBox(color: cGold),
+                  ),
+
+                // ---------- hot spots: top bar ----------
+                _hot(20, 8, 250, 64, 'Profile',
+                    () => _soon('PROFILE', '${p.name} · Level 1')),
+                _hot(980, 18, 150, 44, 'Points',
+                    () => _soon('POINTS', 'Earn points from quests and missions.')),
+                _hot(1142, 14, 52, 52, 'Notifications',
+                    () => _panel('NOTIFICATIONS', 'No new notifications.')),
+                _hot(1204, 14, 52, 52, 'Settings',
+                    () => _panel('SETTINGS', 'Signed in as ${p.name}.',
+                        signOut: true)),
+
+                // ---------- left menu ----------
+                _hot(24, 104, 200, 64.3, 'Code Lab',
+                    () => _soon('CODE LAB', 'Practice coding lessons.')),
+                _hot(24, 183.2, 200, 64.3, 'Quests',
+                    () => _soon('QUESTS', 'Your active and finished quests.')),
+                _hot(24, 262.3, 200, 64.3, 'Ranks',
+                    () => _soon('RANKS', 'See how you compare with other players.')),
+                _hot(24, 341.5, 200, 64.3, 'Wardrobe',
+                    () => _soon('WARDROBE', 'Change your outfit and look.')),
+                _hot(24, 420.7, 200, 64.3, 'Backpack',
+                    () => _soon('BACKPACK', 'Items you have collected.')),
+                _hot(24, 504.8, 200, 163.3, 'Event',
+                    () => _soon('EVENT', 'Limited-time events.')),
+
+                // ---------- hub scene ----------
+                _hot(462, 268, 256, 256, 'Your character',
+                    () => _soon('WARDROBE', 'Change your outfit and look.')),
+
+                // ---------- right panel ----------
+                _hot(956, 104, 300, 240.3, 'Current mission',
+                    () => _soon('CHAPTER 1: MISSION 1', 'Your current mission.')),
+                for (int i = 0; i < 4; i++)
+                  _hot(
+                    962,
+                    415.5 + 56.4 * i,
+                    288,
+                    44,
+                    'Daily quest ${i + 1}',
+                    () => setState(() {
+                      if (!_doneQuests.remove(i)) _doneQuests.add(i);
+                    }),
+                  ),
+
+                // ---------- main action ----------
+                _hot(415, 616, 360, 68, 'Start adventure', _openGame),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Invisible button area that highlights on hover / press.
+class _Hot extends StatefulWidget {
+  const _Hot({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  State<_Hot> createState() => _HotState();
+}
+
+class _HotState extends State<_Hot> {
+  bool _hover = false;
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = _hover || _down;
+    return Semantics(
+      button: true,
+      label: widget.label,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hover = true),
+        onExit: (_) => setState(() {
+          _hover = false;
+          _down = false;
+        }),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapDown: (_) => setState(() => _down = true),
+          onTapUp: (_) => setState(() => _down = false),
+          onTapCancel: () => setState(() => _down = false),
+          onTap: widget.onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              color: cGold.withValues(alpha: _down ? .22 : (_hover ? .10 : 0)),
+              border: active ? Border.all(color: cGold, width: 3) : null,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Idle character that hops up and down a few pixels.
+class _BobbingSprite extends StatefulWidget {
+  const _BobbingSprite({required this.sheets, required this.player});
+
+  final SheetSet sheets;
+  final PlayerConfig player;
+
+  @override
+  State<_BobbingSprite> createState() => _BobbingSpriteState();
+}
+
+class _BobbingSpriteState extends State<_BobbingSprite> {
+  Timer? _timer;
+  bool _up = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 700), (_) {
+      if (mounted) setState(() => _up = !_up);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.player;
+    return Transform.translate(
+      offset: Offset(0, _up ? -4 : 0),
+      child: SizedBox.expand(
+        child: CustomPaint(
+          painter: SpritePainter(
+            widget.sheets,
+            p.skin,
+            p.hairLength,
+            p.hairColor,
+            p.outfit,
+            0,
+            kIdleCol,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PixelButton extends StatefulWidget {
+  const PixelButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.width = 360,
+    this.height = 68,
+    this.fontSize = 16,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final double width;
+  final double height;
+  final double fontSize;
+
+  @override
+  State<PixelButton> createState() => _PixelButtonState();
+}
+
+class _PixelButtonState extends State<PixelButton> {
+  bool _pressed = false;
+
+  static const _outline = Color(0xFF0D0620);
+  static const _face = Color(0xFFFFC933);
+  static const _highlight = Color(0xFFFFF0A8);
+  static const _shadow = Color(0xFFD98E04);
+  static const _text = Color(0xFF2A1608);
+
+  @override
+  Widget build(BuildContext context) {
+    final offset = _pressed ? 6.0 : 0.0;
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onPressed,
+      child: SizedBox(
+        width: widget.width,
+        height: widget.height + 12,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 12,
+              height: widget.height,
+              child: const ColoredBox(color: _outline),
+            ),
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 60),
+              left: 0,
+              right: 0,
+              top: offset,
+              height: widget.height,
+              child: Container(
+                color: _outline,
+                padding: const EdgeInsets.all(4),
+                child: Stack(
+                  children: [
+                    const Positioned.fill(child: ColoredBox(color: _face)),
+                    const Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      height: 5,
+                      child: ColoredBox(color: _highlight),
+                    ),
+                    const Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      height: 7,
+                      child: ColoredBox(color: _shadow),
+                    ),
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          widget.label,
+                          style: GoogleFonts.pressStart2p(
+                            fontSize: widget.fontSize,
+                            color: _text,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
